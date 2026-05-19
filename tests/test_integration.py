@@ -4,6 +4,7 @@ These exercise the full command flow through Click's CLI group (not just
 individual commands), drive the example CLI as a real subprocess, and cover
 realistic host-app integration scenarios.
 """
+
 import os
 import pathlib
 import subprocess
@@ -24,9 +25,7 @@ def _run_example_cli(*args, stdin=""):
     """Invoke ``example_runner.py`` as a true subprocess and return CompletedProcess."""
     env = os.environ.copy()
     # Make sure the in-tree package is importable regardless of installed version.
-    env["PYTHONPATH"] = (
-        str(REPO_ROOT) + os.pathsep + env.get("PYTHONPATH", "")
-    )
+    env["PYTHONPATH"] = str(REPO_ROOT) + os.pathsep + env.get("PYTHONPATH", "")
     return subprocess.run(
         [sys.executable, str(EXAMPLE_RUNNER), *args],
         capture_output=True,
@@ -73,7 +72,7 @@ class ExampleRunnerSubprocessTests(unittest.TestCase):
 
 
 class HostApplicationDIIntegrationTests(unittest.TestCase):
-    """Simulates a host app (FastAPI/Flask/Sanic/Starlette/etc.) passing itself into commands via DI."""
+    """Simulate a host app (FastAPI/Flask/Sanic/Starlette/etc.) passing itself into commands."""
 
     def test_app_is_shared_across_commands(self):
         class FakeApp:
@@ -120,9 +119,7 @@ class HostApplicationDIIntegrationTests(unittest.TestCase):
 
         system = ManagementCommandSystem(app=host_app)
         system.register_command(HostCommand, name="host-cmd")
-        system.register_command(
-            PluginCommand, name="plugin-cmd", init_kwargs={"app": plugin_app}
-        )
+        system.register_command(PluginCommand, name="plugin-cmd", init_kwargs={"app": plugin_app})
 
         cli = system.create_cli()
         runner = CliRunner()

@@ -1,4 +1,5 @@
 """Async command fixture used by tests."""
+
 import click
 
 from cmd_manager import Argument, AsyncBaseCommand

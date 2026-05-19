@@ -1,4 +1,5 @@
 """Contract tests for BaseCommand and AsyncBaseCommand themselves."""
+
 import asyncio
 import unittest
 

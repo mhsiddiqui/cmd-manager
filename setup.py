@@ -1,4 +1,5 @@
 """Legacy setup shim. Authoritative metadata lives in ``pyproject.toml``."""
+
 from setuptools import find_packages, setup
 
 setup(
