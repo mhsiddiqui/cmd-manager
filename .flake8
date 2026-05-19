@@ -1,0 +1,13 @@
+[flake8]
+max-line-length = 100
+extend-ignore =
+    # whitespace before ':' — conflicts with black's slice formatting
+    E203,
+    # line break before binary operator — black prefers it
+    W503
+exclude =
+    .git,
+    .tox,
+    .venv,
+    build,
+    dist,

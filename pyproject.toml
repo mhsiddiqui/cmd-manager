@@ -4,29 +4,45 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "cmd-manager"
-version = "0.1.0"
+version = "0.2.0"
 description = "A management command system for FastAPI and Flask inspired by Django management commands."
 readme = "README.md"
 license = "MIT"
 authors = ["Muhammad Hassan Siddiqui <mhassan.eeng@gmail.com>"]
 homepage = "https://github.com/mhsiddiqui/cmd-manager"
 repository = "https://github.com/mhsiddiqui/cmd-manager"
+include = ["cmd_manager/py.typed"]
 
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Operating System :: OS Independent",
     "Framework :: FastAPI",
     "Typing :: Typed",
 ]
 
-keywords = ["fastapi", "flask", "starlette", "management-commands"]
+keywords = ["fastapi", "flask", "starlette", "management-commands", "async"]
 
 [tool.poetry.dependencies]
+python = "^3.9"
 click = "^8.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+pytest-asyncio = "^0.23"
+tox = "^4.0"
+black = "^23.0"
+isort = "^5.12"
+flake8 = "^6.0"
+pre-commit = "^3.0"
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+line_length = 100
