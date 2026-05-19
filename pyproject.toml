@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "cmd-manager"
 version = "0.2.0"
-description = "A management command system for FastAPI and Flask inspired by Django management commands."
+description = "A framework-agnostic management command system for Python apps (FastAPI, Flask, Sanic, Starlette, or plain Python) inspired by Django management commands."
 readme = "README.md"
 license = "MIT"
 authors = ["Muhammad Hassan Siddiqui <mhassan.eeng@gmail.com>"]
@@ -21,11 +21,10 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Framework :: FastAPI",
     "Typing :: Typed",
 ]
 
-keywords = ["fastapi", "flask", "starlette", "management-commands", "async"]
+keywords = ["management-commands", "cli", "click", "fastapi", "flask", "sanic", "starlette", "async"]
 
 [tool.poetry.dependencies]
 python = "^3.9"

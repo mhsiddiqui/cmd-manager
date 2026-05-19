@@ -1,7 +1,7 @@
 [![Build](https://github.com/mhsiddiqui/cmd-manager/actions/workflows/build.yml/badge.svg)](https://github.com/mhsiddiqui/cmd-manager/actions/workflows/build.yml)
 # Cli Manager
 
-A Python package that enables you to create and manage custom management commands, similar to Django's management system for FastAPI, Flask and other similar frameworks. This package uses Python's `click` to define, register, and execute commands for your application dynamically. Both synchronous and asynchronous commands are supported.
+A Python package that enables you to create and manage custom management commands, similar to Django's management system, for any Python application — FastAPI, Flask, Sanic, Starlette, or plain Python. This package uses Python's `click` to define, register, and execute commands for your application dynamically. Both synchronous and asynchronous commands are supported.
 
 ## Features
 
@@ -12,7 +12,7 @@ A Python package that enables you to create and manage custom management command
 - **Lifecycle Hooks:** `setup()` and `teardown(exc)` run before and after every command, even on exceptions.
 - **Aliases, Help & Hidden Commands:** Class-level `aliases`, `help`, `short_help`, `hidden` attributes for ergonomic CLIs.
 - **Plugin Discovery:** Register commands advertised by installed packages through `cmd_manager.commands` entry points.
-- **Pluggable and Extendable:** Easily integrate this package with any FastAPI or third-party app.
+- **Framework-agnostic:** Drop into any Python app — FastAPI, Flask, Sanic, Starlette, or a plain script — and thread your app/context into commands via constructor args.
 
 ## Installation
 
@@ -107,12 +107,12 @@ system.register(package="src.scripts", recursive=True)
 system.register(prefix="ext-", package="external_package.scripts")
 ```
 
-Per-package constructor args (useful when the host app and a plugin expect different DI payloads):
+Per-package constructor args (useful when the host app and a plugin expect different DI payloads). `app` can be any framework instance (FastAPI, Flask, Sanic, Starlette, ...) or any arbitrary object — `ManagementCommandSystem` is framework-agnostic and just forwards constructor args to each command:
 
 ```python
-system = ManagementCommandSystem(app=fastapi_app)
+system = ManagementCommandSystem(app=app)  # app is any object you want injected
 system.register(package="external_package.scripts",
-                init_kwargs={"app": fastapi_app, "config": plugin_cfg})
+                init_kwargs={"app": app, "config": plugin_cfg})
 ```
 
 ### 6. Decorator API for one-off commands

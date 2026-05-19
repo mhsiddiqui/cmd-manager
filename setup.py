@@ -5,7 +5,8 @@ setup(
     name="cmd-manager",
     version="0.2.0",
     description=(
-        "A management command system for FastAPI, Flask, and similar frameworks, "
+        "A framework-agnostic management command system for Python apps "
+        "(FastAPI, Flask, Sanic, Starlette, or plain Python), "
         "inspired by Django management commands."
     ),
     author="Muhammad Hassan Siddiqui",
@@ -22,7 +23,6 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
-        "Framework :: FastAPI",
         "Typing :: Typed",
     ],
 )

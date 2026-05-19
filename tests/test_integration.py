@@ -73,7 +73,7 @@ class ExampleRunnerSubprocessTests(unittest.TestCase):
 
 
 class HostApplicationDIIntegrationTests(unittest.TestCase):
-    """Simulates a FastAPI/Flask host passing itself into commands via DI."""
+    """Simulates a host app (FastAPI/Flask/Sanic/Starlette/etc.) passing itself into commands via DI."""
 
     def test_app_is_shared_across_commands(self):
         class FakeApp:
