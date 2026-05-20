@@ -1,14 +1,18 @@
 [![Build](https://github.com/mhsiddiqui/cmd-manager/actions/workflows/build.yml/badge.svg)](https://github.com/mhsiddiqui/cmd-manager/actions/workflows/build.yml)
 # Cli Manager
 
-A Python package that enables you to create and manage custom management commands, similar to Django's management system for FastAPI, Flask and other similar frameworks. This package uses Python's `click` to define, register, and execute commands for your application dynamically.
+A Python package that enables you to create and manage custom management commands, similar to Django's management system, for any Python application — FastAPI, Flask, Sanic, Starlette, or plain Python. This package uses Python's `click` to define, register, and execute commands for your application dynamically. Both synchronous and asynchronous commands are supported.
 
 ## Features
 
-- **Dynamic Command Registration:** Automatically discover and register commands located in specific directories.
-- **Class-Based Commands:** Easily define reusable commands by subclassing `BaseCommand`.
-- **Custom Arguments:** Commands can specify their own arguments and options, which will be automatically handled by the command-line interface.
-- **Pluggable and Extendable:** Easily integrate this package with any FastAPI app or third-party package.
+- **Dynamic Command Registration:** Automatically discover and register commands located in specific directories (recursively, optionally).
+- **Class-Based Commands:** Easily define reusable commands by subclassing `BaseCommand` (sync) or `AsyncBaseCommand` (async).
+- **Decorator API:** Register plain functions (sync or `async`) directly with `@system.command()`.
+- **Custom Arguments:** Commands can specify their own arguments and options via `Argument.positional(...)` / `Argument.option(...)`.
+- **Lifecycle Hooks:** `setup()` and `teardown(exc)` run before and after every command, even on exceptions.
+- **Aliases, Help & Hidden Commands:** Class-level `aliases`, `help`, `short_help`, `hidden` attributes for ergonomic CLIs.
+- **Plugin Discovery:** Register commands advertised by installed packages through `cmd_manager.commands` entry points.
+- **Framework-agnostic:** Drop into any Python app — FastAPI, Flask, Sanic, Starlette, or a plain script — and thread your app/context into commands via constructor args.
 
 ## Installation
 
@@ -20,98 +24,156 @@ pip install cmd-manager
 
 ## Usage
 
-### 1. Define Your Command
-
-To create a custom command, define a Python script in your project and subclass `BaseCommand`. Implement the `run` method to include your logic, and use `get_arguments` to specify any arguments the command will accept.
+### 1. Define a synchronous command
 
 ```python
 # src/scripts/mycommand.py
+from cmd_manager import Argument, BaseCommand
 
-from cmd_manager import BaseCommand, Argument
 
 class Command(BaseCommand):
-    def get_arguments(self):
-        return [
-            Argument('arg1', is_argument=True),
-            Argument('--n', is_argument=False, type=int),
-        ]
+    """Print the arguments passed in."""
+
+    arguments = (
+        Argument.positional("arg1"),
+        Argument.option("--n", type=int, default=1),
+    )
 
     def run(self, *args, **kwargs):
-        print(f"Running command with args: {args}, kwargs: {kwargs}")
+        print(f"Running with args: {args}, kwargs: {kwargs}")
 ```
 
-To Argument class accept all the parameters which `click.Argument` and `click.Option` accept. By using `is_argument=True/False`, both type of argument can be differentiated.
+`Argument.positional` wraps `click.argument`; `Argument.option` wraps `click.option`. Every `click` keyword (`type`, `prompt`, `required`, `is_flag`, `multiple`, ...) is forwarded verbatim.
+
+### 2. Define an asynchronous command
+
+```python
+# src/scripts/fetch.py
+import click
+from cmd_manager import Argument, AsyncBaseCommand
 
 
-### 2. Register Commands
+class Command(AsyncBaseCommand):
+    """Fetch a URL asynchronously."""
 
-In your main CLI runner file, use the `ManagementCommandSystem` to register and organize all your commands dynamically. This method discovers all commands within a specified package (like `src.scripts`) and registers them.
+    arguments = (Argument.option("--url", required=True),)
+
+    async def setup(self):
+        self.session = await open_session()
+
+    async def run(self, *args, **kwargs):
+        body = await self.session.get(kwargs["url"])
+        click.echo(body)
+
+    async def teardown(self, exc=None):
+        await self.session.close()
+```
+
+The system detects async commands automatically and runs them on an event loop — `setup`, `run`, and `teardown` are all awaited.
+
+### 3. Register and run
 
 ```python
 # cli_runner.py
-
 from cmd_manager import ManagementCommandSystem
 
-# Initialize the management command system
-management_system = ManagementCommandSystem()
+system = ManagementCommandSystem()
+system.register(package="src.scripts")
+cli = system.create_cli()
 
-# Register all commands in the 'src.scripts' package
-management_system.register(package='src.scripts')
-
-# Create the Click CLI group
-cli = management_system.create_cli()
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
 ```
 
-This code sets up the command system and links the command logic to a FastAPI instance. All commands from the specified package (`src.scripts`) will automatically become available as CLI commands.
-
-### 3. Run Commands
-
-Once your commands are registered, you can run them using the CLI:
+Then:
 
 ```bash
-python cli_runner.py mycommand arg1_value --arg2 123
+python cli_runner.py mycommand arg1_value --n 3
+python cli_runner.py fetch --url https://example.com
+python cli_runner.py list   # built-in: prints every registered command
 ```
 
-In this case, `mycommand` is the command name, and `arg1_value` and `--arg2 123` are the arguments passed to the command.
-
-### 4. Using Management Commands from External Packages
-
-If you have installed another FastAPI package with its own set of management commands, you can also register those commands in your CLI by specifying the package name.
+### 4. Recursive discovery & sub-packages
 
 ```python
-management_system.register(package='external_package.scripts')
+system.register(package="src.scripts", recursive=True)
 ```
 
-To avoid command name conflicts between multiple packages, you can apply a prefix:
+`src/scripts/users/create.py` becomes the command `users-create`.
+
+### 5. Prefixing third-party command packages
 
 ```python
-management_system.register(prefix='ext-', package='external_package.scripts')
+system.register(prefix="ext-", package="external_package.scripts")
 ```
 
-This way, all commands from `external_package` will be prefixed with `ext-`, avoiding any conflicts with similarly named commands in your project.
+Per-package constructor args (useful when the host app and a plugin expect different DI payloads). `app` can be any framework instance (FastAPI, Flask, Sanic, Starlette, ...) or any arbitrary object — `ManagementCommandSystem` is framework-agnostic and just forwards constructor args to each command:
 
-Here’s another example where you define a simple `greet` command:
+```python
+system = ManagementCommandSystem(app=app)  # app is any object you want injected
+system.register(package="external_package.scripts",
+                init_kwargs={"app": app, "config": plugin_cfg})
+```
+
+### 6. Decorator API for one-off commands
+
+```python
+from cmd_manager import Argument
+
+@system.command("greet", arguments=[Argument.option("--name", default="world")])
+def greet(name):
+    """Say hello."""
+    click.echo(f"hello {name}")
+
+
+@system.command()  # name defaults to "fetch-once" (kebab-cased function name)
+async def fetch_once(url):
+    ...
+```
+
+### 7. Plugin discovery via entry points
+
+A plugin package declares the command in its `pyproject.toml`:
+
+```toml
+[project.entry-points."cmd_manager.commands"]
+greet = "my_plugin.scripts.greet:Command"
+```
+
+The host app then loads every installed plugin command with one call:
+
+```python
+system.register_entry_points()
+```
+
+### 8. Command metadata
+
+Any `BaseCommand` / `AsyncBaseCommand` subclass can set class-level attributes:
+
+```python
+class Command(BaseCommand):
+    """Long help text comes from the docstring by default."""
+
+    name = "do-thing"            # override the discovered name
+    short_help = "Do a thing."   # one-liner shown in `--help`
+    aliases = ("dt",)             # alternate names (registered as hidden subcommands)
+    hidden = False                # hide from `--help` listings
+```
 
 ### Example
 
-Example can be seen in example folder. This example can be run by running following command
+See the `example/` folder; run it with:
 
 ```bash
 python example_runner.py whats_my_name
+python example_runner.py list
 ```
 
 ## Authors
 [@mhsiddiqui](https://github.com/mhsiddiqui)
 
 ## Contributing
-Contributions are always welcome!
+Contributions are always welcome! Please read `CONTRIBUTING.md` and adhere to the project's code of conduct.
 
-Please read contributing.md to get familiar how to get started.
-
-Please adhere to the project's code of conduct.
-
-Feedback And Support
+## Feedback and Support
 Please open an issue and follow the template, so the community can help you.
